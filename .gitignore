@@ -1,0 +1,13 @@
+# Archivos y carpetas de compilación
+build/
+dist/
+*.spec
+
+# Entornos virtuales y caché de Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Carpeta de destino de archivos multimedia
+Media/

@@ -1,0 +1,45 @@
+name: Compilar Ejecutables (Windows y Linux)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Permite ejecutar el flujo manualmente desde un botón en GitHub
+
+jobs:
+  build:
+    name: Compilar en ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: MediaCollecter-Windows
+            binary_path: dist/MediaCollecter.exe
+          - os: ubuntu-latest
+            artifact_name: MediaCollecter-Linux
+            binary_path: dist/MediaCollecter
+
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar entorno de Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Compilar con PyInstaller
+        run: |
+          pyinstaller --onefile --name "MediaCollecter" MediaCollecter.py
+
+      - name: Subir ejecutable como artefacto descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.binary_path }}
+          retention-days: 14
